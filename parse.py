@@ -1,0 +1,13 @@
+from providedcode.transitionparser import TransitionParser
+from providedcode.dependencygraph import DependencyGraph
+import sys
+
+if __name__ == '__main__':
+    result = []
+    for sentence in sys.stdin:
+        temp1 = DependencyGraph.from_sentence(sentence)
+        result.append(temp1)
+    haha = TransitionParser.load(sys.argv[1])
+    parsed = haha.parse(result)
+    for parse in parsed:
+        print parse.to_conll(10).encode('utf-8'),'\n'

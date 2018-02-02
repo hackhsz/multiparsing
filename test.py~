@@ -1,0 +1,123 @@
+import random
+from providedcode import dataset
+from providedcode.transitionparser import TransitionParser
+from providedcode.evaluate import DependencyEvaluator
+from featureextractor import FeatureExtractor
+from transition import Transition
+
+if __name__ == '__main__':
+   
+    #swedish 
+    data = dataset.get_swedish_train_corpus().parsed_sents()
+    random.seed(1234)
+    subdata = random.sample(data, 200)
+    
+    #english
+    dataeng = dataset.get_english_train_corpus().parsed_sents()
+    random.seed(1234)
+    subdataeng = random.sample(dataeng,200)
+
+
+    #danish
+    datadan = dataset.get_danish_train_corpus().parsed_sents()
+    random.seed(1234)
+    subdatadan = random.sample(datadan,200)
+
+    
+
+
+
+    try:
+
+        #swedish
+        tp = TransitionParser(Transition, FeatureExtractor)
+        tp.train(subdata)
+        tp.save('swedish.model')
+        
+
+        #English
+        eng = TransitionParser(Transition,FeatureExtractor)
+        eng.train(subdataeng)
+        eng.save('english.model')
+
+
+        #Danish
+        dan = TransitionParser(Transition, FeatureExtractor)
+        dan.train(subdatadan)
+        dan.save('danish.model')
+        
+
+        #Swedish
+        testdata = dataset.get_swedish_test_corpus().parsed_sents()
+#        tp = TransitionParser.load('badfeatures.model')
+        parsed = tp.parse(testdata)
+        with open('test.conll', 'w') as f:
+            for p in parsed:
+                f.write(p.to_conll(10).encode('utf-8'))
+                f.write('\n')
+
+        ev = DependencyEvaluator(testdata, parsed)
+        print "UAS: {} \nLAS: {}".format(*ev.eval())
+
+        
+        #English 
+        testdata1 = dataset.get_english_dev_corpus().parsed_sents()
+        parsed = eng.parse(testdata1)
+        with open('test.conll','w') as f:
+            for p in parsed:
+                f.write(p.to_conll(10).encode('utf-8'))
+                f.write('\n')
+
+        ev1 = DependencyEvaluator(testdata1,parsed)
+        print "English UAS:{} \nEnglish LAS:{}".format(*ev1.eval())
+
+        #Danish
+        testdata2 = dataset.get_danish_dev_corpus().parsed_sents()
+        parsed1 = dan.parse(testdata2)
+        with open('test.conll','w') as f:
+            for p in parsed1:
+                f.write(p.to_conll(10).encode('utf-8'))
+                f.write('\n')
+
+        ev2 = DependencyEvaluator(testdata2,parsed1)
+        print "Danish UAS:{} \nDanish LAS:{}".format(*ev2.eval())
+                
+
+
+
+
+        
+        # parsing arbitrary sentences (english):
+        # sentence = DependencyGraph.from_sentence('Hi, this is a test')
+
+        # tp = TransitionParser.load('english.model')
+        # parsed = tp.parse([sentence])
+        # print parsed[0].to_conll(10).encode('utf-8')
+    except NotImplementedError:
+        print """
+        This file is currently broken! We removed the implementation of Transition
+        (in transition.py), which tells the transitionparser how to go from one
+        Configuration to another Configuration. This is an essential part of the
+        arc-eager dependency parsing algorithm, so you should probably fix that :)
+
+        The algorithm is described in great detail here:
+            http://aclweb.org/anthology//C/C12/C12-1059.pdf
+
+        We also haven't actually implemented most of the features for for the
+        support vector machine (in featureextractor.py), so as you might expect the
+        evaluator is going to give you somewhat bad results...
+
+        Your output should look something like this:
+
+            LAS: 0.23023302131
+            UAS: 0.125273849831
+
+        Not this:
+
+            Traceback (most recent call last):
+                File "test.py", line 41, in <module>
+                    ...
+                    NotImplementedError: Please implement shift!
+
+
+        """
